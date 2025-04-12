@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option csharp_namespace = "ChatApplication.Common.ChatProto";
+
+package chat;
+
+message ChatModel {
+	string user = 1;
+	string message = 2;
+}
+
+service Chat {
+	rpc ChatStream (stream ChatModel) returns (stream ChatModel);
+}

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>da381c7f-9bd6-4f6a-9230-12bf8f644570</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+	<PackageReference Include="Google.Protobuf" Version="3.30.2" />
+	<PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
+	<PackageReference Include="Grpc.Net.Client" Version="2.70.0" />
+	<PackageReference Include="Grpc.Tools" Version="2.71.0">
+		<PrivateAssets>all</PrivateAssets>
+		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChatApplication.Common\ChatApplication.Common.csproj" />
+	<Protobuf Include="..\ChatApplication.Common\Protos\chat.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+</Project>

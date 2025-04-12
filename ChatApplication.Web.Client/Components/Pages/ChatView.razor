@@ -1,0 +1,198 @@
+﻿@page "/chat"
+@using ChatApplication.Common.ChatProto
+@using Grpc.Core
+@inject Chat.ChatClient ChatClient
+@rendermode InteractiveServer
+
+<!-- Inline CSS styling for a more Discord-like chat UI -->
+<style>
+    .chat-container {
+        max-width: 1000px;
+        margin: 5rem auto;
+        background-color: #2f3136;
+        color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .chat-header {
+        padding: 1rem;
+        background-color: #202225;
+        border-bottom: 1px solid #4f545c;
+        font-size: 1.25rem;
+        font-weight: bold;
+    }
+
+    .chat-messages {
+        padding: 1rem;
+        height: 300px;
+        overflow-y: auto;
+        background-color: #36393f;
+    }
+
+    .chat-message {
+        margin-bottom: 0.75rem;
+    }
+
+        .chat-message strong {
+            color: #7289da;
+        }
+
+    .chat-inputs {
+        display: flex;
+        padding: 0.75rem 1rem;
+        background-color: #202225;
+        border-top: 1px solid #4f545c;
+    }
+
+        .chat-inputs input[type="text"] {
+            flex: 1;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            background-color: #40444b;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+            .chat-inputs input[type="text"]:focus {
+                outline: none;
+                box-shadow: 0 0 0 2px #7289da;
+            }
+
+        .chat-inputs button {
+            padding: 0.75rem 1rem;
+            background-color: #7289da;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+            .chat-inputs button:hover {
+                background-color: #677bc4;
+            }
+
+    .connect-btn {
+        display: block;
+        margin: 2rem auto;
+        padding: 1rem 2rem;
+        background-color: #7289da;
+        border: none;
+        border-radius: 4px;
+        font-size: 1.25rem;
+        color: #fff;
+        cursor: pointer;
+    }
+
+        .connect-btn:hover {
+            background-color: #677bc4;
+        }
+
+    .disconnect-btn {
+        margin-top: 1rem;
+        background-color: #f04747;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+    }
+
+        .disconnect-btn:hover {
+            background-color: #c63737;
+        }
+</style>
+
+<div class="chat-container">
+    <div class="chat-header">
+        Chat Room
+    </div>
+
+    @if (!isConnected)
+    {
+        <div class="chat-messages">
+            <p style="text-align: center; color: #aaa;">Please click "Connect" to join the chat</p>
+        </div>
+        <div class="chat-inputs">
+            <button class="connect-btn" @onclick="Connect">Connect</button>
+        </div>
+    }
+    else
+    {
+        <div class="chat-messages">
+            @foreach (var msg in messages)
+            {
+                <div class="chat-message">
+                    <strong>@msg.User:</strong> @msg.Message
+                </div>
+            }
+        </div>
+        <div class="chat-inputs">
+            <input type="text" placeholder="Your name" @bind="user" style="max-width: 120px;" />
+            <input type="text" placeholder="Type your message" @bind="message" />
+            <button @onclick="SendMessage">Send</button>
+        </div>
+        <div style="padding: 0 1rem 1rem;">
+            <button class="disconnect-btn" @onclick="Disconnect">Disconnect</button>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isConnected = false;
+    private string user = string.Empty;
+    private string message = string.Empty;
+    private List<ChatModel> messages = new();
+    private AsyncDuplexStreamingCall<ChatModel, ChatModel> chatCall = null!;
+    private CancellationTokenSource cts = null!;
+
+    private async Task Connect()
+    {
+        cts = new CancellationTokenSource();
+        chatCall = ChatClient.ChatStream(cancellationToken: cts.Token);
+        isConnected = true;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach (var msg in chatCall.ResponseStream.ReadAllAsync(cts.Token))
+                {
+                    messages.Add(msg);
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+            {
+                throw new Exception("Disconnected");
+            }
+            catch (Exception)
+            {
+                throw new Exception("Error reading stream");
+            }
+        });
+    }
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(message))
+        {
+            var msgToSend = new ChatModel { User = user, Message = message };
+            await chatCall.RequestStream.WriteAsync(msgToSend);
+            message = string.Empty;
+        }
+    }
+
+    private async Task Disconnect()
+    {
+        await chatCall.RequestStream.CompleteAsync();
+        cts.Cancel();
+        isConnected = false;
+    }
+}

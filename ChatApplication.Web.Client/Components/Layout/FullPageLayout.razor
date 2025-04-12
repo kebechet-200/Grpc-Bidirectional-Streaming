@@ -1,0 +1,42 @@
+﻿@inherits LayoutComponentBase
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="~/" />
+    <HeadOutlet />
+    @* If you use bootstrap or other styles, include them here *@
+</head>
+<body>
+    <div class="fullpage-container">
+        @Body
+    </div>
+
+    @* Blazor scripts *@
+    <script src="_framework/blazor.server.js"></script>
+</body>
+</html>
+
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+    }
+
+    .fullpage-container {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        /* If you’d like a dark background, un-comment:
+            background-color: #2f3136;
+            */
+    }
+</style>
+
+@code {
+}
