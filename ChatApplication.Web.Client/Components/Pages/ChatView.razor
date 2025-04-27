@@ -7,106 +7,106 @@
 <!-- Inline CSS styling for a more Discord-like chat UI -->
 <style>
     .chat-container {
-        max-width: 1000px;
-        margin: 5rem auto;
-        background-color: #2f3136;
-        color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        overflow: hidden;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 1000px;
+    margin: 5rem auto;
+    background-color: #2f3136;
+    color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .chat-header {
-        padding: 1rem;
-        background-color: #202225;
-        border-bottom: 1px solid #4f545c;
-        font-size: 1.25rem;
-        font-weight: bold;
+    padding: 1rem;
+    background-color: #202225;
+    border-bottom: 1px solid #4f545c;
+    font-size: 1.25rem;
+    font-weight: bold;
     }
 
     .chat-messages {
-        padding: 1rem;
-        height: 300px;
-        overflow-y: auto;
-        background-color: #36393f;
+    padding: 1rem;
+    height: 300px;
+    overflow-y: auto;
+    background-color: #36393f;
     }
 
     .chat-message {
-        margin-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
     }
 
-        .chat-message strong {
-            color: #7289da;
-        }
+    .chat-message strong {
+    color: #7289da;
+    }
 
     .chat-inputs {
-        display: flex;
-        padding: 0.75rem 1rem;
-        background-color: #202225;
-        border-top: 1px solid #4f545c;
+    display: flex;
+    padding: 0.75rem 1rem;
+    background-color: #202225;
+    border-top: 1px solid #4f545c;
     }
 
-        .chat-inputs input[type="text"] {
-            flex: 1;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 4px;
-            margin-right: 0.5rem;
-            background-color: #40444b;
-            color: #fff;
-            font-size: 1rem;
-        }
+    .chat-inputs input[type="text"] {
+    flex: 1;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    background-color: #40444b;
+    color: #fff;
+    font-size: 1rem;
+    }
 
-            .chat-inputs input[type="text"]:focus {
-                outline: none;
-                box-shadow: 0 0 0 2px #7289da;
-            }
+    .chat-inputs input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #7289da;
+    }
 
-        .chat-inputs button {
-            padding: 0.75rem 1rem;
-            background-color: #7289da;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1rem;
-        }
+    .chat-inputs button {
+    padding: 0.75rem 1rem;
+    background-color: #7289da;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+    }
 
-            .chat-inputs button:hover {
-                background-color: #677bc4;
-            }
+    .chat-inputs button:hover {
+    background-color: #677bc4;
+    }
 
     .connect-btn {
-        display: block;
-        margin: 2rem auto;
-        padding: 1rem 2rem;
-        background-color: #7289da;
-        border: none;
-        border-radius: 4px;
-        font-size: 1.25rem;
-        color: #fff;
-        cursor: pointer;
+    display: block;
+    margin: 2rem auto;
+    padding: 1rem 2rem;
+    background-color: #7289da;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.25rem;
+    color: #fff;
+    cursor: pointer;
     }
 
-        .connect-btn:hover {
-            background-color: #677bc4;
-        }
+    .connect-btn:hover {
+    background-color: #677bc4;
+    }
 
     .disconnect-btn {
-        margin-top: 1rem;
-        background-color: #f04747;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        color: #fff;
-        cursor: pointer;
+    margin-top: 1rem;
+    background-color: #f04747;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
     }
 
-        .disconnect-btn:hover {
-            background-color: #c63737;
-        }
+    .disconnect-btn:hover {
+    background-color: #c63737;
+    }
 </style>
 
 <div class="chat-container">
@@ -162,11 +162,22 @@
         {
             try
             {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var counter = 1;
                 await foreach (var msg in chatCall.ResponseStream.ReadAllAsync(cts.Token))
                 {
+                    if (!msg.Message.StartsWith("Time"))
+                        msg.Message = $"Message count: {counter}";
                     messages.Add(msg);
+                    counter++;
                     await InvokeAsync(StateHasChanged);
                 }
+
+                await chatCall.RequestStream.WriteAsync(new ChatModel
+                {
+                    User = user,
+                    Message = $"Time taken: {stopwatch.ElapsedMilliseconds} ms"
+                });
             }
             catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
             {
@@ -181,10 +192,20 @@
 
     private async Task SendMessage()
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(message))
         {
             var msgToSend = new ChatModel { User = user, Message = message };
-            await chatCall.RequestStream.WriteAsync(msgToSend);
+            for (int i = 0; i < 30_000; i++)
+            {
+                await chatCall.RequestStream.WriteAsync(msgToSend);
+            }
+            await chatCall.RequestStream.WriteAsync(new ChatModel
+            {
+                User = user,
+                Message = $"Time taken: {stopwatch.ElapsedMilliseconds} ms"
+            });
+
             message = string.Empty;
         }
     }
